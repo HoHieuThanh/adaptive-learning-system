@@ -92,3 +92,4 @@ if ($PassedStages -eq $TotalStages) {
     Write-Host "Co loi xay ra trong qua trinh kiem thu local. Vui long kiem tra!" -ForegroundColor Red
     exit 1
 }
+
