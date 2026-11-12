@@ -1,0 +1,161 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ============================================================================
+  # 1. FRONTEND CI: Node 20, npm ci, Unit Tests, Vite Production Build
+  # ============================================================================
+  frontend:
+    name: Frontend (React + Vite)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Frontend Tests
+        run: npm test
+
+      - name: Build Production Bundle
+        run: npm run build
+
+      - name: Upload Frontend Build Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-build
+          path: frontend/dist
+          retention-days: 7
+
+  # ============================================================================
+  # 2. BACKEND CI: Java 21, Maven Clean, Test, Package JAR
+  # ============================================================================
+  backend:
+    name: Backend (Spring Boot 3 + Java 21)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21 (Eclipse Temurin)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Run Maven Tests & Package
+        run: |
+          chmod +x mvnw
+          ./mvnw clean test package -B
+
+      - name: Upload Surefire Test Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-surefire-reports
+          path: backend/target/surefire-reports
+          retention-days: 7
+
+      - name: Upload Backend Executable JAR
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: backend-executable-jar
+          path: backend/target/*.jar
+          retention-days: 7
+
+  # ============================================================================
+  # 3. ML SERVICE CI: Python 3.11, Pytest, Model Governance & Schema Validation
+  # ============================================================================
+  ml-service:
+    name: ML Service (FastAPI + Scikit-learn + XGBoost)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ml-service
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: 'pip'
+          cache-dependency-path: ml-service/requirements.txt
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Pytest & Model Validation Quality Gates
+        run: |
+          mkdir -p reports
+          pytest --junitxml=reports/pytest-report.xml -v
+
+      - name: Upload ML Service Test Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ml-service-test-reports
+          path: ml-service/reports
+          retention-days: 7
+
+      - name: Upload ML Model Artifacts & Evaluation Metrics
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: ml-model-artifacts
+          path: |
+            ml-service/models/*.joblib
+            ml-service/models/*.json
+            ml-service/models/*.png
+          retention-days: 7
+
+  # ============================================================================
+  # 4. DOCKER BUILD CHECK: Validate Container Images & Multi-Stage Builds
+  # ============================================================================
+  docker-build-check:
+    name: Docker Build Verification
+    needs: [frontend, backend, ml-service]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Verify Docker Compose Build
+        run: |
+          docker compose build
