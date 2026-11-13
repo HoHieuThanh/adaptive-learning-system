@@ -1,0 +1,40 @@
+# ==============================================================================
+# LOAD GENERATOR: POD TẠO TẢI THỬ NGHIỆM ĐỂ MINH HỌA HPA AUTO-SCALING
+# Mục đích: Bắn HTTP requests liên tục vào backend-service và ml-service
+# để đẩy mức sử dụng CPU vượt ngưỡng 60%, kích hoạt HPA mở rộng từ 1 lên 2 hoặc 3 pods.
+# ==============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: load-generator
+  labels:
+    app: load-generator
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: load-generator
+  template:
+    metadata:
+      labels:
+        app: load-generator
+    spec:
+      containers:
+      - name: load-generator
+        image: busybox:1.36
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "Bat dau ban tai HTTP de kich hoat HPA..."
+          while true; do
+            wget -q -O- http://backend-service:8080/api/health > /dev/null 2>&1
+            wget -q -O- http://ml-service:8000/health > /dev/null 2>&1
+          done
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "32Mi"
+          limits:
+            cpu: "200m"
+            memory: "64Mi"

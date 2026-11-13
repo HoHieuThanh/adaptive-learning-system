@@ -1,0 +1,21 @@
+# ==============================================================================
+# CONFIGMAP: CẤU HÌNH MÔI TRƯỜNG KUBERNETES CHO HỆ THỐNG ADAPTIVE LEARNING
+# ==============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: adaptive-config
+  labels:
+    app.kubernetes.io/part-of: adaptive-learning-system
+data:
+  # Cấu hình Database
+  POSTGRES_DB: "adaptive_learning_db"
+  SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-service:5432/adaptive_learning_db"
+  
+  # Cấu hình Spring Boot Backend Core
+  SPRING_PROFILES_ACTIVE: "dev"
+  SERVER_PORT: "8080"
+  ML_SERVICE_URL: "http://ml-service:8000"
+  
+  # Cấu hình FastAPI ML Microservice
+  ML_PORT: "8000"

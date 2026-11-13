@@ -1,0 +1,14 @@
+# ==============================================================================
+# KUSTOMIZATION: TẬP HỢP TẤT CẢ TÀI NGUYÊN KUBERNETES CỦA HỆ THỐNG
+# Áp dụng toàn bộ: kubectl apply -k deployment/k8s
+# ==============================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - configmap.yaml
+  - postgres.yaml
+  - ml-service.yaml
+  - backend.yaml
+  - frontend.yaml
+  - hpa.yaml

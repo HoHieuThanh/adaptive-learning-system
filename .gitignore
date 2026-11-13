@@ -6,6 +6,8 @@
 .env.*.local
 *.pem
 *.key
+*secret.yaml
+!*secret.yaml.example
 
 # ==========================================
 # Operating System & IDEs

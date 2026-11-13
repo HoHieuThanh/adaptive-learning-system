@@ -199,12 +199,40 @@ powershell -ExecutionPolicy Bypass -File .\test_local_ci.ps1
 
 ---
 
+### 8. Triển Khai Lên Kubernetes & Auto-scaling (HPA)
+
+Hệ thống đã sẵn sàng các manifest chuẩn hóa tại thư mục `deployment/k8s/`:
+- **Frontend:** Deployment + NodePort Service (`port 30080:80`).
+- **Backend:** Deployment (CPU 250m-1000m, RAM 512Mi-1Gi) + ClusterIP Service (`port 8080`).
+- **ML Service:** Deployment (CPU 200m-800m, RAM 256Mi-1Gi) + ClusterIP Service (`port 8000`).
+- **PostgreSQL:** StatefulSet + PersistentVolumeClaim (`2Gi`) + ClusterIP Service (`port 5432`).
+- **Config & Secret:** ConfigMap `adaptive-config`, Secret template `secret.yaml.example`.
+- **Healthchecks:** `livenessProbe` và `readinessProbe` cho tất cả pods.
+- **Horizontal Pod Autoscaler (HPA):** Tự động co giãn từ **1 đến 3 Pods** khi mức sử dụng CPU vượt ngưỡng **60%**.
+- **Metrics Server:** Manifest `metrics-server.yaml` kèm cấu hình `--kubelet-insecure-tls` cho local cluster (Docker Desktop / Minikube).
+
+Lệnh triển khai nhanh bằng script:
+```powershell
+# 1. Cài đặt Metrics Server
+powershell -ExecutionPolicy Bypass -File .\deployment\k8s\deploy_k8s.ps1 -Action metrics-server
+
+# 2. Triển khai toàn bộ ứng dụng
+powershell -ExecutionPolicy Bypass -File .\deployment\k8s\deploy_k8s.ps1 -Action apply
+
+# 3. Chạy kịch bản tạo tải minh họa HPA Auto-scaling (1 -> 3 pods)
+powershell -ExecutionPolicy Bypass -File .\deployment\k8s\deploy_k8s.ps1 -Action load-test
+```
+
+---
+
 ## 📑 Tài Liệu Kỹ Thuật Bổ Sung
+- [Hướng dẫn Triển khai Kubernetes & HPA (docs/kubernetes_guide.md)](docs/kubernetes_guide.md)
 - [Hướng dẫn CI/CD Pipeline & GitHub Actions (docs/ci_cd_guide.md)](docs/ci_cd_guide.md)
 - [Hướng dẫn Vận hành Docker & Khắc phục sự cố (docs/docker_guide.md)](docs/docker_guide.md)
 - [Tài liệu Kiến trúc & Luồng giao tiếp (docs/architecture.md)](docs/architecture.md)
 - [Quy tắc Gợi ý Lộ trình Thích ứng & Explainability (docs/learning_path_rules.md)](docs/learning_path_rules.md)
 - [Cơ sở dữ liệu & Schema (database/README.md)](database/README.md)
+- [Script Vận hành Kubernetes (deployment/k8s/deploy_k8s.ps1)](deployment/k8s/deploy_k8s.ps1)
 - [Kịch bản Kiểm thử Local CI (test_local_ci.ps1)](test_local_ci.ps1)
 - [Kịch bản Kiểm thử Nghiệm thu Docker (test_docker_deployment.ps1)](test_docker_deployment.ps1)
 - [Kịch bản Kiểm thử End-to-End Tự động (test_e2e_integration.ps1)](test_e2e_integration.ps1)
