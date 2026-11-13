@@ -82,3 +82,4 @@ switch ($Action) {
         Write-Host "Da don dep toan bo tai nguyen." -ForegroundColor Green
     }
 }
+

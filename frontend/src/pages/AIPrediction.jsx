@@ -4,7 +4,7 @@ import { studentService } from '../api/studentService';
 import { predictionService } from '../api/predictionService';
 import { LevelBadge } from '../components/common/LevelBadge';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
-import { Brain, Sparkles, CheckCircle2, History, Info, Play, Layers } from 'lucide-react';
+import { Brain, Sparkles, CheckCircle2, History, Info, Play, Layers, AlertTriangle } from 'lucide-react';
 
 export const AIPrediction = () => {
   const [searchParams] = useSearchParams();
@@ -131,13 +131,33 @@ export const AIPrediction = () => {
       {/* Real-time Prediction Output */}
       {predictionResult && (
         <div className="card" style={{
-          border: '2px solid var(--primary)',
+          border: predictionResult.isMock ? '2px solid #f59e0b' : '2px solid var(--primary)',
           backgroundColor: '#ffffff',
           boxShadow: 'var(--shadow-md)'
         }}>
+          {predictionResult.isMock && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              backgroundColor: '#fffbeb',
+              border: '1px solid #fde68a',
+              borderRadius: 'var(--radius-md)',
+              padding: '0.75rem 1rem',
+              marginBottom: '1rem',
+              color: '#92400e',
+              fontSize: '0.875rem',
+              fontWeight: 600
+            }}>
+              <AlertTriangle size={20} color="#d97706" style={{ flexShrink: 0 }} />
+              <div>
+                <strong>[CHẾ ĐỘ DEMO / DỮ LIỆU MẪU MÔ PHỎNG]</strong>: Kết quả này không phải suy luận AI thời gian thực do chưa kết nối được Backend (Spring Boot: 8080) hoặc ML Service (FastAPI: 8000). Vui lòng khởi động đầy đủ dịch vụ để thực hiện dự đoán thực tế.
+              </div>
+            </div>
+          )}
           <div className="card-header">
-            <h3 className="card-title" style={{ color: 'var(--primary)' }}>
-              <CheckCircle2 size={20} /> Kết Quả Suy Luận Thời Gian Thực Từ AI
+            <h3 className="card-title" style={{ color: predictionResult.isMock ? '#d97706' : 'var(--primary)' }}>
+              {predictionResult.isMock ? <AlertTriangle size={20} /> : <CheckCircle2 size={20} />} {predictionResult.isMock ? 'Kết Quả Mô Phỏng (Offline Demo Mode)' : 'Kết Quả Suy Luận Thời Gian Thực Từ AI'}
             </h3>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
               Thời gian: {new Date(predictionResult.createdAt).toLocaleString('vi-VN')}
@@ -213,7 +233,11 @@ export const AIPrediction = () => {
                     </td>
                     <td style={{ fontWeight: 700, color: 'var(--primary)' }}>{h.studentCode}</td>
                     <td style={{ fontWeight: 600 }}>{h.studentName}</td>
-                    <td><span className="badge badge-info">{h.modelName}</span></td>
+                    <td>
+                      <span className={h.modelName?.includes('Demo') || h.modelName?.includes('Mock') ? 'badge badge-warning' : 'badge badge-info'}>
+                        {h.modelName}
+                      </span>
+                    </td>
                     <td><LevelBadge level={h.predictedLevel} /></td>
                     <td style={{ fontWeight: 700 }}>{(Number(h.confidence) * 100).toFixed(1)}%</td>
                   </tr>

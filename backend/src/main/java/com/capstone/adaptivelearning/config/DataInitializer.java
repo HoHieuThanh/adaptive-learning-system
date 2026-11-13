@@ -151,14 +151,14 @@ public class DataInitializer implements CommandLineRunner {
                         .build());
             }
 
-            // Seed Prediction & Learning Path nếu chưa có
+            // Seed Prediction & Learning Path nếu chưa có (Dữ liệu mẫu khởi tạo xác định - Deterministic Demo Data)
             if (predictionRepository.findByStudentIdOrderByCreatedAtDesc(student.getId()).isEmpty()) {
-                double conf = 0.88 + (Math.random() * 0.10);
+                double conf = "High".equals(level) ? 0.9450 : ("Medium".equals(level) ? 0.9120 : 0.8950);
                 Prediction p = predictionRepository.save(Prediction.builder()
                         .student(student)
                         .predictedLevel(level)
                         .confidence(BigDecimal.valueOf(conf).setScale(4, RoundingMode.HALF_UP))
-                        .modelName("XGBoost")
+                        .modelName("XGBoost (Demo Data)")
                         .build());
 
                 learningPathService.generateAdaptivePath(student, p, gradeRepository.findByStudentId(student.getId()), null);

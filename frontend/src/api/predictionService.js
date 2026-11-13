@@ -4,10 +4,9 @@ export const predictionService = {
   async predict(studentId, modelName = 'xgboost') {
     try {
       const response = await apiClient.post(`/predictions/predict/${studentId}`, { modelName });
-      return { success: true, data: response.data.data, isMock: false };
+      return { success: true, data: { ...response.data.data, isMock: false }, isMock: false };
     } catch (error) {
-      console.warn('[DEMO MODE] Backend chưa sẵn sàng, mô phỏng dự đoán AI cho studentId:', studentId);
-      // Fallback demo prediction
+      console.warn('[DEMO MODE] Không thể kết nối Backend/ML Service, sử dụng dữ liệu mẫu mô phỏng:', error.message);
       const isRisk = Number(studentId) === 3;
       return {
         success: true,
@@ -18,10 +17,13 @@ export const predictionService = {
           studentCode: isRisk ? "SV003" : "SV001",
           predictedLevel: isRisk ? "Low" : "High",
           confidence: isRisk ? 0.9410 : 0.9520,
-          modelName: modelName === 'decision_tree' ? 'Decision Tree' : (modelName === 'kmeans_hybrid' ? 'K-Means + Classifier' : 'XGBoost'),
-          createdAt: new Date().toISOString()
+          modelName: `${modelName === 'decision_tree' ? 'Decision Tree' : (modelName === 'kmeans_hybrid' ? 'K-Means + Classifier' : 'XGBoost')} (Demo Mock)`,
+          createdAt: new Date().toISOString(),
+          isMock: true,
+          mockWarning: "DỮ LIỆU DEMO MÔ PHỎNG - Chưa kết nối Backend (8080) hoặc ML Service (8000)"
         },
-        isMock: true
+        isMock: true,
+        error: error.message
       };
     }
   },

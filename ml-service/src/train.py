@@ -33,6 +33,40 @@ from src.preprocessing import (
 from src.evaluate import evaluate_single_model, compare_and_visualize_models
 
 
+def log_model_to_mlflow(
+    model_name: str,
+    params: Dict[str, Any],
+    metrics: Dict[str, Any],
+    tags: Dict[str, str] = None
+) -> bool:
+    """
+    Ghi nhận metrics, params và tags vào MLflow Tracking Server nếu MLflow sẵn sàng.
+    Graceful fallback: Không làm gián đoạn pipeline huấn luyện nếu MLflow server chưa bật.
+    """
+    try:
+        import mlflow
+        tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
+        mlflow.set_tracking_uri(tracking_uri)
+        mlflow.set_experiment("student-performance-prediction")
+
+        with mlflow.start_run(run_name=model_name):
+            mlflow.log_params(params)
+            mlflow.log_metrics({
+                "accuracy": metrics["accuracy"],
+                "f1_macro": metrics["f1_macro"],
+                "precision_macro": metrics["precision_macro"],
+                "recall_macro": metrics["recall_macro"],
+            })
+            if tags:
+                mlflow.set_tags(tags)
+            print(f"[MLflow] Ghi nhận run '{model_name}' thành công tới {tracking_uri}")
+        return True
+    except Exception as e:
+        print(f"[MLflow Info] Không thể kết nối MLflow ({e}). Đã lưu artifact cục bộ an toàn.")
+        return False
+
+
+
 def train_decision_tree(
     X_train: np.ndarray,
     y_train: np.ndarray,
@@ -214,7 +248,27 @@ def run_training_pipeline(
     for name, metrics in results.items():
         print(f"{name:<25} | {metrics['accuracy']:<10.4f} | {metrics['precision_macro']:<15.4f} | {metrics['recall_macro']:<12.4f} | {metrics['f1_macro']:<12.4f}")
 
-    # 6. Trực quan hóa và lưu file ảnh so sánh
+    # 6. Ghi nhận Experiment Tracking qua MLflow (nếu có server/thư viện)
+    log_model_to_mlflow(
+        "Decision_Tree_Classifier",
+        {"criterion": "gini", "max_depth": 5, "min_samples_split": 6, "min_samples_leaf": 3},
+        results["Decision Tree"],
+        {"model_family": "decision_tree", "baseline": "true"}
+    )
+    log_model_to_mlflow(
+        "XGBoost_Classifier",
+        {"n_estimators": 100, "max_depth": 3, "learning_rate": 0.05, "subsample": 0.8, "colsample_bytree": 0.8},
+        results["XGBoost"],
+        {"model_family": "xgboost", "sota": "true"}
+    )
+    log_model_to_mlflow(
+        "KMeans_Hybrid_Classifier",
+        {"n_clusters": 3, "n_estimators": 100, "max_depth": 3, "learning_rate": 0.05},
+        results["K-Means + Classifier"],
+        {"model_family": "hybrid_kmeans_xgboost", "augmented": "true"}
+    )
+
+    # 7. Trực quan hóa và lưu file ảnh so sánh
     chart_path = os.path.join(models_dir, "model_comparison.png")
     json_path = os.path.join(models_dir, "evaluation_results.json")
     compare_and_visualize_models(results, output_image_path=chart_path, output_json_path=json_path)

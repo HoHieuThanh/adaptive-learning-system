@@ -35,6 +35,7 @@ export const LearningPathPage = () => {
   const [filterPriority, setFilterPriority] = useState('ALL');
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [actionMessage, setActionMessage] = useState(null);
+  const [isMockData, setIsMockData] = useState(false);
 
   // Nạp danh sách sinh viên
   useEffect(() => {
@@ -63,6 +64,7 @@ export const LearningPathPage = () => {
         setLoading(true);
         const res = await learningPathService.getLatestByStudent(selectedStudentId);
         setPathway(res.data);
+        setIsMockData(Boolean(res.isMock));
       } catch (err) {
         console.error('Lỗi nạp lộ trình:', err);
       } finally {
@@ -85,6 +87,7 @@ export const LearningPathPage = () => {
       setRefreshing(true);
       const res = await learningPathService.generateOrRefresh(selectedStudentId);
       setPathway(res.data);
+      setIsMockData(Boolean(res.isMock));
       showNotification('Đã cập nhật và làm mới lộ trình thích ứng thành công!');
     } catch (err) {
       console.error('Lỗi làm mới lộ trình:', err);
@@ -200,6 +203,27 @@ export const LearningPathPage = () => {
         >
           <Check size={18} />
           {actionMessage}
+        </div>
+      )}
+
+      {/* Demo Warning Banner */}
+      {isMockData && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          backgroundColor: '#fffbeb',
+          border: '1px solid #fde68a',
+          borderRadius: 'var(--radius-md)',
+          padding: '0.75rem 1rem',
+          color: '#92400e',
+          fontSize: '0.875rem',
+          fontWeight: 600
+        }}>
+          <AlertTriangle size={20} color="#d97706" style={{ flexShrink: 0 }} />
+          <div>
+            <strong>[CHẾ ĐỘ DEMO / LỘ TRÌNH MÔ PHỎNG]</strong>: Đang hiển thị lộ trình học tập mẫu dự phòng do Backend chưa kết nối. Dữ liệu thực tế sẽ được tải tự động khi Spring Boot (port 8080) và PostgreSQL hoạt động.
+          </div>
         </div>
       )}
 

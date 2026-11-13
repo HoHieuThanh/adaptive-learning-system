@@ -259,3 +259,4 @@ kubectl delete -k deployment/k8s
 # Hoặc dùng script:
 powershell -ExecutionPolicy Bypass -File .\deployment\k8s\deploy_k8s.ps1 -Action delete
 ```
+
